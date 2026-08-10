@@ -182,6 +182,88 @@ file are London-local. Jobs run `cd /home/cal/pa && uv run cal-prompt <name>`
 plus the vault backup, qmd indexing, and maintenance jobs. The entrypoint
 re-installs the crontab on file change; no container restart needed.
 
+## Email (Phase 3, 2026-08-10)
+
+Cal has an AgentMail inbox, `pmk-pa-gq1kzs@agentmail.to`. It can **send only
+to `padraigmk@gmail.com`** and **read its own inbound mail**. Egress:
+`api.agentmail.to` on the allowlist.
+
+The boundary is the provider's, not ours. Two server-side controls do the work:
+
+- **Send allowlist** = `padraigmk@gmail.com`, set at org *and* inbox level.
+  Both, deliberately: AgentMail resolves lists narrowest-first ("if an
+  inbox-level list has a match, pod and org lists are not checked") and does
+  not document whether an org list still governs when the inbox has none — so
+  we don't rely on inheritance.
+- **Inbox-scoped key** (`am_us_inbox_…`) with only `message_read`,
+  `message_send`, `message_update`. Scope intersects permissions, so it cannot
+  reach org-level capabilities whatever the flags say.
+
+Because that key can structurally only email Pádraig, it is a *low-stakes*
+credential by design and Cal holds it directly, in `/home/cal/.agentmail.env`
+(mode 600). Worst case if it leaks: Pádraig gets spammed until it's rotated.
+It is intentionally **not** deny-ruled — Cal's own scripts source it, and a
+`Read()` deny rule wouldn't stop a bash `source` anyway, so the rule would be
+decoration.
+
+The permissions that are *withheld* are the load-bearing ones:
+
+| Withheld | Why it would matter |
+|---|---|
+| `api_key_create` | Mints credentials; undoes every other restriction. |
+| `webhook_create` | Makes **AgentMail's** servers POST message content to any URL — egress that squid cannot see or block, straight through the Phase 2 cage. |
+| `list_entry_create/delete` | Narrower-overrides-broader means an inbox-level entry shadows the org allowlist: the recipient pin stops being a pin. |
+| `inbox_create`, `domain_*`, `pod_*` | New addresses/identities outside the lists' coverage. |
+| Spam / Blocked / Trash read | "Blocked" is where mail the receive-list *rejected* lands. Reading it hands Cal exactly what the filter excluded. |
+
+### Tools
+
+- `pa/scripts/email-padraig.sh <subject> [body-file]` — send. Recipient and
+  `[cal]` subject tag are hardcoded, but that's convention and provenance;
+  the enforcement is server-side.
+- `pa/scripts/check-email.sh [--peek]` — read inbound, print it under an
+  explicit untrusted-content banner, label it `cal-seen` so cron doesn't
+  re-surface it. `--peek` leaves labels alone.
+
+### What inbound email is, and isn't
+
+The receive allowlist authenticates the **sender**, never the **content**.
+Two reasons it is spam control rather than a trust boundary:
+
+- `gmail.com` publishes `v=DMARC1; p=none` — Google asks receivers to take no
+  action on mail failing authentication for gmail.com senders, and AgentMail
+  doesn't document whether it checks SPF/DKIM alignment before matching a list
+  entry. So a `From:` of Pádraig is weak evidence.
+- **Forwarding defeats it by design.** The whole point of email-in is "forward
+  Cal this thing" — at which point the sender is Pádraig and the words are a
+  stranger's.
+
+This is accepted because it changes nothing structurally: Cal already ingests
+untrusted web and podcast content, and the send side reaches only Pádraig, so
+an injected Cal gains no new outbound channel. Inbound mail sits in the same
+risk tier as WebFetch. `check-email.sh` prints the banner to keep that
+explicit.
+
+**The combination to guard:** read-enabled *plus* a widened send allowlist is
+the genuinely dangerous pair — inbound mail becomes a remote control for
+outbound sending. Adding any send recipient is the moment to re-decide whether
+read stays on. That widening is a console action, so it can only be done by
+Pádraig, never by Cal.
+
+### Verified 2026-08-10 (re-run these after any key or list change)
+
+Read own inbox 200 · send to Pádraig 200 · send to non-allowlisted **403
+`message_rejected`** · create list entry **403** · mint API key **403** ·
+create webhook **403** · create inbox **403** · read another inbox **404**
+(out-of-scope inboxes are invisible, not merely forbidden — same property as
+the GitHub PAT).
+
+**Not yet verified:** the *receive* allowlist. Nothing has tried to deliver
+from a non-allowlisted sender, so its enforcement is assumed, not observed.
+(The AgentMail welcome mail in the inbox predates the list.) To test: send
+from an address that isn't the allowlisted Gmail and confirm it never appears
+in `check-email.sh --peek`.
+
 ## Runbook
 
 - **Deploy a change** (anything beyond allowlist appends): review
@@ -224,7 +306,19 @@ re-installs the crontab on file change; no container restart needed.
 6. **squid 6 quirks**: `cache_dir null` is gone; it cannot open `/dev/stdout`
    after dropping privileges — log to `/var/log/squid/` and let the image
    entrypoint tail it.
-7. **Watcher vs `git pull` in the deploy clone.** The watcher legitimately
+7. **API error text is untrusted input too.** AgentMail's 403s helpfully
+   instruct the caller to escalate: *"use a key with a broader scope
+   (organization-scoped keys hold the widest permissions)"*, *"an unrestricted
+   key via POST /v0/api-keys"*, *"add each missing recipient to the send allow
+   list"*. A perfectly uninjected Cal hitting a 403 could read that as a
+   to-do list. It's inert only because no broader credential exists inside the
+   container and none can be minted. Assume other APIs do the same.
+8. **AgentMail message IDs are RFC 822 msg-ids** — they contain `<`, `>` and
+   `@`, and must be percent-encoded to survive as a URL path segment. Raw ones
+   return an unexplained `400`.
+9. **Cal's own sent mail shares the message list.** Filter on the `received`
+   label or Cal reads its own outbox back.
+10. **Watcher vs `git pull` in the deploy clone.** The watcher legitimately
    dirties `proxy/allowed-domains.txt` in `/root/pa-infra`; `deploy.sh`
    handles this by checking out the file before pulling and re-running the
    validator after, so uncommitted-but-approved appends survive a deploy.
