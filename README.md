@@ -1,7 +1,9 @@
 # pa-infra — the cage
 
-Containerised runtime for Cal (the `pa` assistant). Design rationale lives in
-`pa/research/phase2-container-design.md`; this repo is the buildable artifact.
+Containerised runtime for Cal (the `pa` assistant). **Full reference:
+[ARCHITECTURE.md](ARCHITECTURE.md)** — topology, trust boundaries, runbook,
+and the sharp edges. Design rationale and audit trail live in
+`pa/research/phase2-container-design.md`. This README is the quick version.
 
 ## Layout
 
