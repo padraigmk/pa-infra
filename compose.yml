@@ -23,8 +23,9 @@ services:
       # NB: do not set CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC here — the
       # channels feature (Telegram) is gated on that "nonessential" flag
       # traffic and reports "Channels are not currently available" without it.
-      # Swapped to auto mode at cutover; parity with cal.service until then.
-      CLAUDE_ARGS: "--dangerously-skip-permissions --continue --channels plugin:telegram@claude-plugins-official"
+      # Auto mode (since cutover 2026-08-10): deny rules hold, ask rules relay
+      # to Telegram as approval prompts, classifier gates the rest.
+      CLAUDE_ARGS: "--permission-mode auto --continue --channels plugin:telegram@claude-plugins-official"
     volumes:
       - /home/padraig/cal-home:/home/cal
       - /home/padraig/git/pa:/home/cal/pa
