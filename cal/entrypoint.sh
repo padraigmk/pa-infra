@@ -18,6 +18,11 @@ SCHEDULE_MTIME=""
 install_schedule
 cron
 
+# A container restart kills every process, so any leftover telegram bot.pid is
+# stale by definition — and container pids recycle densely, so the plugin's
+# stale-poller check can SIGTERM an innocent (often its own) fresh process.
+rm -f /home/cal/.claude/channels/telegram/bot.pid
+
 CLAUDE_ARGS="${CLAUDE_ARGS:---dangerously-skip-permissions --continue}"
 runuser -u cal -- tmux new-session -d -s cal \
   "cd /home/cal/pa && claude $CLAUDE_ARGS"
