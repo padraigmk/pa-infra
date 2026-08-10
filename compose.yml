@@ -36,11 +36,13 @@ services:
     networks:
       - calnet
       - egress
+    # Mount the whole directory, not single files: single-file bind mounts pin
+    # the inode, so in-place file replacement (sed -i, git) goes stale.
     volumes:
-      # Deploy-clone copies (root-owned): the *running* allowlist is the one
+      # Deploy-clone copy (root-owned): the *running* allowlist is the one
       # in /root/pa-infra, never Cal's working copy.
-      - ./proxy/squid.conf:/etc/squid/squid.conf:ro
-      - ./proxy/allowed-domains.txt:/etc/squid/allowed-domains.txt:ro
+      - ./proxy:/etc/squid/pa:ro
+    command: ["-f", "/etc/squid/pa/squid.conf", "-NYC"]
 
 networks:
   # internal: true = no gateway to the outside world. Egress denied by
