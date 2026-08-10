@@ -10,6 +10,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && locale-gen en_GB.UTF-8
 
+# London clock everywhere — session, cron jobs, subprocesses — regardless of
+# env inheritance (Cal's 2026-08-10 BST bug: bare `date` ran an hour behind).
+ENV TZ=Europe/London
+RUN ln -sf /usr/share/zoneinfo/Europe/London /etc/localtime \
+    && echo Europe/London > /etc/timezone
+
 # uid 1000 must match padraig on the host so the bind mounts are writable.
 # Ubuntu's base image ships a stock 'ubuntu' user at uid 1000 — replace it.
 RUN userdel -r ubuntu 2>/dev/null || true \
