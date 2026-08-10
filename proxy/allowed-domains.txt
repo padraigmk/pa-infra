@@ -23,3 +23,6 @@ github.com
 platform.claude.com
 mcp-proxy.anthropic.com
 statsig.anthropic.com
+pypi.org
+files.pythonhosted.org
+.githubusercontent.com
