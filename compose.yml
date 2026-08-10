@@ -20,7 +20,9 @@ services:
       https_proxy: http://proxy:3128
       NO_PROXY: localhost,127.0.0.1
       no_proxy: localhost,127.0.0.1
-      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
+      # NB: do not set CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC here — the
+      # channels feature (Telegram) is gated on that "nonessential" flag
+      # traffic and reports "Channels are not currently available" without it.
       # Swapped to auto mode at cutover; parity with cal.service until then.
       CLAUDE_ARGS: "--dangerously-skip-permissions --continue --channels plugin:telegram@claude-plugins-official"
     volumes:
