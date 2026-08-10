@@ -26,3 +26,6 @@ statsig.anthropic.com
 pypi.org
 files.pythonhosted.org
 .githubusercontent.com
+
+# Phase 3 — AgentMail (send-only; org send-allowlist = padraigmk@gmail.com)
+api.agentmail.to
