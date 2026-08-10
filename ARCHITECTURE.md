@@ -222,8 +222,19 @@ The permissions that are *withheld* are the load-bearing ones:
   `[cal]` subject tag are hardcoded, but that's convention and provenance;
   the enforcement is server-side.
 - `pa/scripts/check-email.sh [--peek]` — read inbound, print it under an
-  explicit untrusted-content banner, label it `cal-seen` so cron doesn't
-  re-surface it. `--peek` leaves labels alone.
+  explicit untrusted-content banner, list attachments, label it `cal-seen` so
+  cron doesn't re-surface it. `--peek` leaves labels alone.
+- `pa/scripts/get-attachment.sh <message-id> <attachment-id>` — download one
+  attachment to `/tmp/cal-attachments/`. Attachment bytes live behind a
+  short-lived signed URL on **`cdn.agentmail.to`**, which is why that host is
+  allowlisted alongside `api.agentmail.to`. Inbound attachments are untrusted
+  input like the body they arrived with — a PDF is a normal place to hide
+  injected text. Verified 2026-08-10 on a forwarded 5-page PDF.
+
+Note the asymmetry, which is the whole design in miniature: reading an
+attachment is *our* container fetching an allowlisted host through squid, fully
+governed. Sending one via `attachments[].url` is *AgentMail* fetching a host of
+its caller's choosing, governed by nothing — see below.
 
 ### What inbound email is, and isn't
 
