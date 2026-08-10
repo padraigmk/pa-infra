@@ -20,3 +20,5 @@ property-shared.fly.dev
 
 # Git over HTTPS (fine-grained PAT)
 github.com
+platform.claude.com
+mcp-proxy.anthropic.com
