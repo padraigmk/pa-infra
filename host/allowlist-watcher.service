@@ -1,0 +1,8 @@
+[Unit]
+Description=Validate and apply Cal's egress allowlist appends
+
+[Service]
+Type=oneshot
+# Deliberately the deploy-clone path, never Cal's working copy: Cal must not
+# be able to edit the validation logic that gates its own egress.
+ExecStart=/root/pa-infra/host/allowlist-apply.sh

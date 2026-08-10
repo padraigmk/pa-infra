@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch Cal's proposed egress allowlist for appends
+
+[Path]
+PathChanged=/home/padraig/git/pa-infra/proxy/allowed-domains.txt
+Unit=allowlist-watcher.service
+
+[Install]
+WantedBy=multi-user.target

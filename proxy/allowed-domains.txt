@@ -1,0 +1,22 @@
+# Cal's egress allowlist — one domain per line.
+# APPEND ONLY. New entries: Cal appends after a Telegram ask-approval; the
+# root watcher applies the change only if it is append-only and every added
+# line is domain-shaped. Edits/deletions require a manual root deploy.
+# A leading dot matches all subdomains (e.g. .example.com).
+
+# Tier 1 — core loop
+api.anthropic.com
+claude.ai
+console.anthropic.com
+api.telegram.org
+
+# Tier 2 — approved features
+api.elevenlabs.io
+serpapi.com
+connectapi.garmin.com
+connect.garmin.com
+api.pocketcasts.com
+property-shared.fly.dev
+
+# Git over HTTPS (fine-grained PAT)
+github.com
