@@ -23,7 +23,7 @@ RUN userdel -r ubuntu 2>/dev/null || true \
 
 # Tools installed system-wide (/usr/local), never into /home/cal — the home
 # directory is a bind mount at runtime and would shadow anything put there.
-RUN npm install -g @anthropic-ai/claude-code
+RUN npm install -g @anthropic-ai/claude-code @tobilu/qmd
 RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
 
