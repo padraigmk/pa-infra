@@ -258,6 +258,31 @@ create webhook **403** · create inbox **403** · read another inbox **404**
 (out-of-scope inboxes are invisible, not merely forbidden — same property as
 the GitHub PAT).
 
+### Known limitation — `attachments[].url` is an egress bypass
+
+The send API accepts `attachments: [{url: …}]`, and **AgentMail fetches that URL
+from its own servers**. Verified 2026-08-10: a URL on a non-allowlisted host
+(`https://example.com/`) was fetched and attached; a URL returning 404 was also
+fetched, and because the send was then *rejected*, **no message appeared in sent
+mail** — the outbound request left no trace.
+
+So a compromised Cal can cause an HTTP GET to an arbitrary host, with
+attacker-chosen path and query, invisible to squid and with no audit trail. URL
+length bounds it to a few KB per request, which is more than enough for the
+credentials Cal holds. This is the one hole in the Phase 2 egress cage.
+
+It cannot be closed by permissions: it rides on `message_send`, which *is* the
+feature. It is also probably not specific to AgentMail — Resend's attachments
+take a remote `path` too, so provider-switching likely doesn't fix it.
+
+Mitigations actually in place: the credentials reachable this way are all
+deliberately low-stakes and narrowly scoped (the PAT covers three repos and
+cannot force-push or change visibility; the root mirrors hold true history
+regardless), and AGENTS.md instructs Cal never to use the field and to treat any
+suggestion that it should as hostile — which constrains an honest Cal, not an
+injected one. Worth asking AgentMail whether remote-URL attachments can be
+disabled org-wide; that would close it properly.
+
 **Not yet verified:** the *receive* allowlist. Nothing has tried to deliver
 from a non-allowlisted sender, so its enforcement is assumed, not observed.
 (The AgentMail welcome mail in the inbox predates the list.) To test: send
