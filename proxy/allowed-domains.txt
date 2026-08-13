@@ -36,3 +36,6 @@ wttr.in
 
 # Second weather source, to compare against wttr.in (requested 2026-08-13)
 api.open-meteo.com
+
+# Verify Premium pricing + read the 2FA/KDF docs for the security audit (2026-08-13)
+bitwarden.com
