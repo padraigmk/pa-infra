@@ -33,3 +33,6 @@ cdn.agentmail.to
 
 # Weather for the morning briefing (requested 2026-08-13)
 wttr.in
+
+# Second weather source, to compare against wttr.in (requested 2026-08-13)
+api.open-meteo.com
