@@ -39,3 +39,12 @@ api.open-meteo.com
 
 # Verify Premium pricing + read the 2FA/KDF docs for the security audit (2026-08-13)
 bitwarden.com
+
+# YouTube transcripts via youtube-transcript-api (requested 2026-08-17).
+# Powers the currently-stubbed YouTube half of info-digest. No API key or
+# Google account involved — the library reads the public watch page.
+www.youtube.com
+
+# Reddit — the r/hermesagent thread Pádraig linked on 2026-08-17, and the
+# r/samharris Waking Up transcripts thread in the open task list.
+www.reddit.com
