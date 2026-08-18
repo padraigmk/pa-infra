@@ -48,3 +48,11 @@ www.youtube.com
 # Reddit — the r/hermesagent thread Pádraig linked on 2026-08-17, and the
 # r/samharris Waking Up transcripts thread in the open task list.
 www.reddit.com
+
+# One-way car hire BTS→KSC for the Slovakia trip (requested 2026-08-18).
+# The drop fee is an open item in the trip note and is unpriced — web search
+# says €14–€140 depending on provider, and that Budget charges nothing within
+# Slovakia, but that claim traces back to budget.cz, which I can't read.
+# discovercars.com quotes real one-way totals with the fee included.
+www.budget.cz
+www.discovercars.com
