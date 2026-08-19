@@ -56,3 +56,13 @@ www.reddit.com
 # discovercars.com quotes real one-way totals with the fee included.
 www.budget.cz
 www.discovercars.com
+
+# 2026-08-19 — the Ground 1A question on 20 Princes St. Secondary sources
+# flatly contradict each other (Shelter says Ground 1A is unavailable against
+# a pre-1-May-2026 tenancy; Keystone says the 12-month bar is the only
+# obstacle), and that question sets whether vacant possession is achievable at
+# all. Web search points at SI 2026/421, whose saving provision draws the
+# distinction — but I have been wrong on this exact point before by trusting a
+# secondary summary, so I want the statutory text rather than another gloss.
+# legislation.gov.uk is the UK government's own statute database, read-only.
+www.legislation.gov.uk
