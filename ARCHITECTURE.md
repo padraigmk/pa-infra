@@ -133,17 +133,65 @@ either (a) the allowlist watcher, which enforces a byte-level contract, or
 2. The systemd path unit (`allowlist-watcher.path`) fires
    `/root/pa-infra/host/allowlist-apply.sh` — the root-clone copy, so Cal can
    never edit the validator that gates it.
-3. The validator applies the change **iff**: the deployed file is an exact
-   byte prefix of the working copy (append-only — any edit or deletion of an
-   existing line fails), and every added line is blank, a comment, or matches
-   `^\.?([a-z0-9-]+\.)+[a-z]{2,}$`. Anything else is logged to
-   `/var/log/cal-allowlist.log` and ignored.
-4. On pass: copy to the deploy clone + `squid -k reconfigure`. Live in ~3 s.
+3. The validator applies the change **iff** it clears four gates, in order:
+   1. **Append-only** — the deployed file is an exact byte prefix of the
+      working copy. Any edit or deletion of an existing line fails.
+   2. **Domain-shaped** — every added line is blank, a comment, or matches
+      `^\.?([a-z0-9-]+\.)+[a-z]{2,}$`.
+   3. **No squid redundancy** — no entry is covered by another. A dotted
+      entry `.X` already matches `X` and every subdomain of `X`, so listing
+      both `X` and `.X` (or `.X` and `.sub.X`) is a **fatal** squid config
+      error, not a warning. This gate names the offending pair.
+   4. **Parses under real squid** — the candidate file is staged into a
+      scratch dir with a copy of `squid.conf` and run through
+      `squid -k parse` in a throwaway `ubuntu/squid:latest` container
+      (`--network none`). Same binary calproxy runs, and it works even while
+      calproxy itself is down.
+4. On pass: copy to the deploy clone + `squid -k reconfigure`, then confirm
+   calproxy is still running. Live in ~3 s. **Any failure after the copy
+   restores the last-good file** (`proxy/.allowed-domains.last-good`) and
+   reloads squid.
 5. Cal commits and pushes the append so the repo matches reality.
+
+**Nothing is written to the deploy clone until gates 1–4 all pass**, so a bad
+line can no longer persist across restarts. The policy is deliberately
+**fail-closed**: if the change cannot be validated for any reason (docker
+down, image missing, scratch dir unwritable) it is *not* deployed. A stuck
+append costs one domain; a bad deploy costs all egress.
+
+### How a rejection gets back to a human
+
+A silent rejection was the real defect — it could sit unnoticed for hours.
+Every outcome now surfaces three ways:
+
+| Channel | Who reads it | Contents |
+|---|---|---|
+| `/var/log/cal-allowlist.log` | Pádraig, on the host | one line per attempt |
+| **Telegram message** | Pádraig, immediately | verdict, reason, offending line, and what state the proxy is in |
+| `proxy/.allowlist-status` | **Cal**, from inside the container | timestamp, verdict, detail |
+
+The status file exists because Cal can read neither the log nor anything under
+`/root`, so it previously had *no* way to learn its own append had been
+rejected — the ask-gated edit returns success either way. It sits in Cal's
+bind-mounted working copy, is gitignored, and is written after every attempt.
+The path unit watches `allowed-domains.txt` specifically, so writing a sibling
+file does not retrigger the watcher.
+
+**Cal's obligation:** after an allowlist append, read `proxy/.allowlist-status`
+and report the verdict to Pádraig. "The edit succeeded" and "the change took
+effect" are different facts, and only the second one matters.
 
 Removing or editing entries is deliberately manual: change the file, review,
 `deploy.sh`. Manual single-domain add (fallback):
 `sudo /root/pa-infra/scripts/allow-domain.sh api.example.com`.
+
+> **Trap — the two clones diverge silently.** A hand-edit to the deploy copy
+> (e.g. fixing an outage as root) breaks the byte-prefix invariant, and *every*
+> later append from Cal fails gate 1 until the two are reconciled. Before the
+> hardening that rejection was `exit 0` plus a log line nobody was watching; it
+> now alerts. After any manual edit of
+> `/root/pa-infra/proxy/allowed-domains.txt`, sync Cal's working copy to match
+> (or deploy Cal's copy) in the same sitting.
 
 ## Git, credentials, history protection
 

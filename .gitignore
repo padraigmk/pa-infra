@@ -1,0 +1,5 @@
+# Written by the root allowlist watcher after each apply attempt, so Cal can
+# read the verdict on its own append from inside the container (it can reach
+# neither /var/log/cal-allowlist.log nor anything under /root). Runtime state,
+# not source.
+proxy/.allowlist-status
