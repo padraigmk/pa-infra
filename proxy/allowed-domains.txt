@@ -66,3 +66,22 @@ www.discovercars.com
 # secondary summary, so I want the statutory text rather than another gloss.
 # legislation.gov.uk is the UK government's own statute database, read-only.
 www.legislation.gov.uk
+
+# 2026-08-20 — QMD's embedding model. The vault's semantic index had been frozen
+# since 14 June; re-registering the collection fixed lexical search, but
+# `qmd embed` fails with "fetch failed" because `qmd doctor` reports the model
+# cache is missing 3/3 — the GGUF weights come from HuggingFace. Read-only model
+# downloads. Only the 300M embedding model is needed for indexing; the 1.7B
+# generation model is the query expander AGENTS.md already tells me to avoid.
+#
+# NOTE THE FORM — dotted only, never both. My first attempt at this append
+# listed `huggingface.co` AND `.huggingface.co`, which squid 6.13 treats as a
+# redundant pair and refuses to parse: "FATAL: Bungled squid.conf". That is a
+# fatal error, not a warning, so calproxy crash-looped and took ALL outbound
+# traffic down (including api.anthropic.com) from ~18:53–19:01 on 2026-08-20.
+# In squid, a leading dot already matches the bare domain AND all subdomains,
+# so the dotted form alone is both sufficient and correct. `www.huggingface.co`
+# is not enough on its own: it 302-redirects to the bare domain, and the actual
+# model files come from CDN hosts under both domains.
+.huggingface.co
+.hf.co
