@@ -85,3 +85,14 @@ www.legislation.gov.uk
 # model files come from CDN hosts under both domains.
 .huggingface.co
 .hf.co
+
+# 2026-08-21 — Garmin's SSO host. `connect.garmin.com` and
+# `connectapi.garmin.com` are already allowed, but every login strategy in
+# garminconnect authenticates against sso.garmin.com first, so garmin-sync
+# fails at login with a 403 CONNECT tunnel error and never reaches the two
+# hosts that ARE allowed. Needed for the Oxford Half training check-ins.
+#
+# BARE form on purpose. `.garmin.com` would match the two existing bare
+# garmin.com entries above and be the exact redundant-pair error that took
+# all egress down on 2026-08-20 — a dotted entry here would be fatal.
+sso.garmin.com
