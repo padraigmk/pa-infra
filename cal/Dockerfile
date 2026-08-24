@@ -5,10 +5,18 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates curl wget git tmux cron \
       python3 python3-venv python3-pip \
-      nodejs npm \
+      nodejs npm build-essential \
       ripgrep jq unzip zip less nano vim-tiny locales tzdata \
     && rm -rf /var/lib/apt/lists/* \
     && locale-gen en_GB.UTF-8
+
+# build-essential is not optional. @tobilu/qmd depends on better-sqlite3, a
+# native module. When npm finds no prebuilt binary matching the base image's
+# node/ABI it falls back to `node-gyp rebuild`, which needs make and g++.
+# Without them the build dies at `not found: make` — which is exactly what
+# happened on 2026-08-24, because `ubuntu:26.04` is a rolling tag and the base
+# had moved to node 22.22.1 / python 3.14 since the last successful build.
+# The image had always been one base-image bump away from this.
 
 # London clock everywhere — session, cron jobs, subprocesses — regardless of
 # env inheritance (Cal's 2026-08-10 BST bug: bare `date` ran an hour behind).
