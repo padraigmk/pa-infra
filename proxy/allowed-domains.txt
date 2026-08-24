@@ -96,3 +96,24 @@ www.legislation.gov.uk
 # garmin.com entries above and be the exact redundant-pair error that took
 # all egress down on 2026-08-20 — a dotted entry here would be fatal.
 sso.garmin.com
+
+# 2026-08-25 — the last two Garmin hosts the login flow needs. With
+# sso.garmin.com live, authentication now SUCCEEDS and returns a CAS service
+# ticket, then dies one step later converting that ticket into a session:
+#
+#   diauth.garmin.com          — DI OAuth2 token exchange, the preferred path
+#                                (garminconnect client.py:112). Currently 403s,
+#                                so the library logs "DI token exchange failed"
+#                                and drops to the JWT_WEB fallback.
+#   mobile.integration.garmin.com
+#                              — the iOS/Android service URL the fallback then
+#                                GETs to consume the ticket (client.py:49,57).
+#                                Also 403s, so no JWT_WEB cookie is ever set and
+#                                login fails with "JWT_WEB cookie not set after
+#                                ticket consumption".
+#
+# Both BARE, for the same reason as sso.garmin.com above: a dotted `.garmin.com`
+# would cover the four bare garmin.com entries already in this file and is the
+# exact redundant-pair error that took all egress down on 2026-08-20.
+diauth.garmin.com
+mobile.integration.garmin.com
