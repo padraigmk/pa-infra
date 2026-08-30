@@ -117,3 +117,15 @@ sso.garmin.com
 # exact redundant-pair error that took all egress down on 2026-08-20.
 diauth.garmin.com
 mobile.integration.garmin.com
+
+# 2026-08-30 — Dwarkesh Podcast transcripts (approved by Pádraig in chat).
+# YouTube captions already reach us via SerpApi, but they carry NO speaker
+# labels, so a two-person interview arrives as one undifferentiated stream.
+# dwarkesh.com publishes a properly edited transcript with speakers attributed,
+# which is materially better for summarising or wiki ingest.
+#
+# DOTTED form. No bare `dwarkesh.com` exists anywhere above, so this adds
+# exactly one form for this domain and also covers `www.` — the site is a
+# Substack-hosted custom domain and the canonical URL is www. See the garmin
+# and huggingface notes above for why the redundant pair is never acceptable.
+.dwarkesh.com
