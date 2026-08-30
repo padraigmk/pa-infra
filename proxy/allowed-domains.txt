@@ -129,3 +129,22 @@ mobile.integration.garmin.com
 # Substack-hosted custom domain and the canonical URL is www. See the garmin
 # and huggingface notes above for why the redundant pair is never acceptable.
 .dwarkesh.com
+
+# 2026-08-30 — reasoning/forecasting research thread (Pádraig asked for both).
+#
+# 80000hours.org — publishes full episode transcripts. Immediate need is
+# "AI 2027's author returns with a plan to change the ending | Daniel
+# Kokotajlo" (27 Aug 2026, 3h47m), which he's listening to now. Pocket Casts
+# gives me metadata only — title, duration, progress — so the transcript has to
+# come from the publisher. Same pattern as .dwarkesh.com above.
+#
+# lesswrong.com — The Codex (Scott Alexander's Slate Star Codex essays), one of
+# the site's three curated libraries, alongside the Sequences. Reference reading
+# for the reasoning/forecasting notes now going into the vault.
+#
+# DOTTED form for both. Neither domain appears anywhere above in any form, so
+# each adds exactly one form and also covers www. — both sites' canonical URLs
+# are www. See the garmin and huggingface notes above for why a bare+dotted
+# pair is never acceptable.
+.80000hours.org
+.lesswrong.com
