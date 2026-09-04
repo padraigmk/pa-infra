@@ -182,3 +182,7 @@ mobile.integration.garmin.com
 
 # 2026-09-04 — NHSBSA: GHIC processing dates + PRC rules, for the Slovakia trip.
 .nhsbsa.nhs.uk
+
+# 2026-09-04 — Lomnický štít: official price list + September availability, 6 days out.
+.vt.sk
+.gopass.travel
