@@ -148,3 +148,37 @@ mobile.integration.garmin.com
 # pair is never acceptable.
 .80000hours.org
 .lesswrong.com
+
+# 2026-09-01 — podcast transcript aggregators, approved by Pádraig in chat
+# ("yeah go ahead. let's test those").
+#
+# Context: sourcing podcast transcripts instead of building an STT pipeline.
+# Podcast AUDIO is unreachable from here — 25 distinct CDN hosts across his 53
+# played shows, several of them 302 redirectors, so the audio path stays shut
+# and this is deliberately not an attempt to reopen it. YouTube via SerpApi
+# covers ~60-65% of shows; these two are for the remainder.
+#
+# podscripts.co — free public transcript archive; 462 Blindboy episodes alone.
+# happyscribe.com — its /public/ archive carries full transcripts for shows
+# that publish none themselves (again Blindboy, whose own site has nothing).
+#
+# Both serve AI-generated transcripts, so quality is roughly what our own STT
+# would produce; the win is that the compute and the egress are already paid.
+#
+# DOTTED form for both. Neither appears anywhere above in any form, so each
+# adds exactly one form and also covers www. — happyscribe's canonical URLs
+# are www. See the garmin and huggingface notes above for why a bare+dotted
+# pair is never acceptable.
+#
+# Coverage across his 75 allowlisted shows is UNMEASURED at time of writing —
+# that is the reason for the request, not a claim being made by it. Full
+# workings in pa/research/podcast-transcript-sourcing.md.
+.podscripts.co
+.happyscribe.com
+
+# 2026-09-01 — podcast transcript sources; free full-text search, unlike podscripts.
+.tapesearch.com
+.pod-transcript.com
+
+# 2026-09-04 — NHSBSA: GHIC processing dates + PRC rules, for the Slovakia trip.
+.nhsbsa.nhs.uk
