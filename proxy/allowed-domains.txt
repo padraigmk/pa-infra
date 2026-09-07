@@ -186,3 +186,6 @@ mobile.integration.garmin.com
 # 2026-09-04 — Lomnický štít: official price list + September availability, 6 days out.
 .vt.sk
 .gopass.travel
+
+# 2026-09-07 — Hotel Partizán, Tále: real ceník + online entry reservation, Sunday spa stop.
+.partizan.sk
