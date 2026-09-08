@@ -189,3 +189,7 @@ mobile.integration.garmin.com
 
 # 2026-09-07 — Hotel Partizán, Tále: real ceník + online entry reservation, Sunday spa stop.
 .partizan.sk
+
+# 2026-09-08 — Tatranská Lomnica restaurants: check mid-September shoulder-season closure before Monday dinner.
+.staramama.sk
+.lafamigliatatry.sk
