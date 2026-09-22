@@ -193,3 +193,6 @@ mobile.integration.garmin.com
 # 2026-09-08 — Tatranská Lomnica restaurants: check mid-September shoulder-season closure before Monday dinner.
 .staramama.sk
 .lafamigliatatry.sk
+
+# 2026-09-22 — Oxford planning: the Article 4 Direction in the 20 Princes St search pack, and HMO policy.
+.oxford.gov.uk
