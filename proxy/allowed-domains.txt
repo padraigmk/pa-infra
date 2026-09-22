@@ -196,3 +196,17 @@ mobile.integration.garmin.com
 
 # 2026-09-22 — Oxford planning: the Article 4 Direction in the 20 Princes St search pack, and HMO policy.
 .oxford.gov.uk
+
+# 2026-09-22 — npm registry, for the Telegram channel plugin. The plugin's
+# MCP server starts with `bun install --no-summary && bun server.ts`, so it
+# re-resolves its dependency tree on EVERY container start. Its node_modules
+# is empty and bun's local cache holds nothing useful, so that install 403s
+# at squid, the MCP server never starts, and claude then records
+# `plugin:telegram:telegram` in mcp-needs-auth-cache.json and silently stops
+# retrying the server for the life of the install — the channel goes quiet
+# with no error anywhere. See [[cal-container-gotchas]] cause (3).
+#
+# BARE form. No npmjs.org entry exists anywhere above in any form, so this
+# adds exactly one form and cannot create the bare/dotted redundant pair that
+# took all egress down on 2026-08-20.
+registry.npmjs.org
