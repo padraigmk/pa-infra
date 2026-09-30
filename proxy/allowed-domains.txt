@@ -213,3 +213,10 @@ registry.npmjs.org
 
 # 2026-09-29 — arXiv papers for his reading list (abs pages + export API).
 .arxiv.org
+
+# 2026-09-30 — PsyArXiv preprints (Beautiful Loop paper for a voice deep dive).
+.osf.io
+
+# 2026-09-30 — author's own essay on the same paper + an Asterisk explainer (OSF PDF redirects to GCS).
+rubenlaukkonen.substack.com
+.asteriskmag.com
