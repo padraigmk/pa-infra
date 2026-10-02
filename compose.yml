@@ -25,7 +25,7 @@ services:
       # traffic and reports "Channels are not currently available" without it.
       # Auto mode (since cutover 2026-08-10): deny rules hold, ask rules relay
       # to Telegram as approval prompts, classifier gates the rest.
-      CLAUDE_ARGS: "--permission-mode auto --continue --channels plugin:telegram@claude-plugins-official"
+      CLAUDE_ARGS: "--permission-mode auto --continue --channels plugin:telegram@claude-plugins-official --dangerously-load-development-channels server:calweb"
     volumes:
       - /home/padraig/cal-home:/home/cal
       - /home/padraig/git/pa:/home/cal/pa
