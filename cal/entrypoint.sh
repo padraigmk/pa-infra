@@ -24,8 +24,28 @@ cron
 rm -f /home/cal/.claude/channels/telegram/bot.pid
 
 CLAUDE_ARGS="${CLAUDE_ARGS:---dangerously-skip-permissions --continue}"
-runuser -u cal -- tmux new-session -d -s cal \
-  "cd /home/cal/pa && claude $CLAUDE_ARGS"
+
+# The image bakes an npm-global `claude` (root-owned, in /usr/local) purely as
+# a bootstrap: cal (uid 1000) can't self-update that copy. On first boot it
+# installs the native build into ~/.local/bin (bind-mounted, so it survives
+# image rebuilds, not just restarts); every boot after that just checks for
+# an update. Never let this block starting the session — `|| true` and a
+# timeout throughout, since a stale `claude` beats no session at all.
+printf '%s\n' "export CLAUDE_ARGS='$CLAUDE_ARGS'" > /tmp/cal-start.sh
+cat >> /tmp/cal-start.sh <<'STARTEOF'
+export PATH="$HOME/.local/bin:$PATH"
+mkdir -p "$HOME/.cache"
+LOG="$HOME/.cache/claude-install.log"
+if [ "$(command -v claude 2>/dev/null)" != "$HOME/.local/bin/claude" ]; then
+  echo "$(date -Is) bootstrapping native Claude Code install" >>"$LOG"
+  timeout 60 /usr/local/bin/claude install latest --force >>"$LOG" 2>&1 || true
+fi
+timeout 60 claude update >>"$LOG" 2>&1 || true
+cd /home/cal/pa
+exec claude $CLAUDE_ARGS
+STARTEOF
+chmod +x /tmp/cal-start.sh
+runuser -u cal -- tmux new-session -d -s cal /tmp/cal-start.sh
 
 # Keep the container up while Cal's tmux session lives; re-read the schedule
 # when it changes. restart: unless-stopped revives us if the session dies.
