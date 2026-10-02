@@ -45,6 +45,31 @@ STARTEOF
 chmod +x /tmp/cal-start.sh
 runuser -u cal -- tmux new-session -d -s cal /tmp/cal-start.sh
 
+# --dangerously-load-development-channels asks for confirmation at every
+# launch. Accept it only when the dev channels it lists are exactly
+# server:calweb (our own); anything else stays on screen for a human. "1"
+# picks option 1; Enter is a fallback in case the number only moved focus.
+# Gives up after 3 min (the update check above can take 60s first).
+(
+  pane() { runuser -u cal -- tmux capture-pane -p -t cal:0 2>/dev/null; }
+  for _ in $(seq 90); do
+    sleep 2
+    p=$(pane) || continue
+    grep -q "Loading development channels" <<<"$p" || continue
+    chans=$(grep -o 'server:[A-Za-z0-9_.-]*' <<<"$p" | sort -u | tr '\n' ' ')
+    if [ "$chans" != "server:calweb " ]; then
+      echo "dev-channels dialog lists '$chans' — not auto-accepting"
+      break
+    fi
+    runuser -u cal -- tmux send-keys -t cal:0 1
+    sleep 2
+    grep -q "Loading development channels" <<<"$(pane)" \
+      && runuser -u cal -- tmux send-keys -t cal:0 Enter
+    echo "dev-channels dialog auto-accepted (server:calweb)"
+    break
+  done
+) &
+
 # Keep the container up while Cal's tmux session lives; re-read the schedule
 # when it changes. restart: unless-stopped revives us if the session dies.
 while runuser -u cal -- tmux has-session -t cal 2>/dev/null; do
