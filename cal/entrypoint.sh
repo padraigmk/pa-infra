@@ -25,20 +25,18 @@ rm -f /home/cal/.claude/channels/telegram/bot.pid
 
 CLAUDE_ARGS="${CLAUDE_ARGS:---dangerously-skip-permissions --continue}"
 
-# The image bakes an npm-global `claude` (root-owned, in /usr/local) purely as
-# a bootstrap: cal (uid 1000) can't self-update that copy. On first boot it
-# installs the native build into ~/.local/bin (bind-mounted, so it survives
-# image rebuilds, not just restarts); every boot after that just checks for
-# an update. Never let this block starting the session — `|| true` and a
-# timeout throughout, since a stale `claude` beats no session at all.
+# Claude Code is the native build in ~/.local/bin (bind-mounted, so it
+# survives image rebuilds, and cal-owned, so it can self-update). A fresh home
+# gets it from the official installer; every boot checks for an update. Never
+# let this block starting the session — `|| true` and a timeout throughout.
 printf '%s\n' "export CLAUDE_ARGS='$CLAUDE_ARGS'" > /tmp/cal-start.sh
 cat >> /tmp/cal-start.sh <<'STARTEOF'
 export PATH="$HOME/.local/bin:$PATH"
 mkdir -p "$HOME/.cache"
 LOG="$HOME/.cache/claude-install.log"
-if [ "$(command -v claude 2>/dev/null)" != "$HOME/.local/bin/claude" ]; then
+if [ ! -x "$HOME/.local/bin/claude" ]; then
   echo "$(date -Is) bootstrapping native Claude Code install" >>"$LOG"
-  timeout 60 /usr/local/bin/claude install latest --force >>"$LOG" 2>&1 || true
+  timeout 120 bash -c 'curl -fsSL https://claude.ai/install.sh | bash' >>"$LOG" 2>&1 || true
 fi
 timeout 60 claude update >>"$LOG" 2>&1 || true
 cd /home/cal/pa
