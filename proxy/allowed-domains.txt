@@ -210,6 +210,8 @@ mobile.integration.garmin.com
 # adds exactly one form and cannot create the bare/dotted redundant pair that
 # took all egress down on 2026-08-20.
 registry.npmjs.org
+# 2026-10-02 — native Claude Code installer/updater release fetch
+downloads.claude.ai
 
 # 2026-09-29 — arXiv papers for his reading list (abs pages + export API).
 .arxiv.org
@@ -220,3 +222,9 @@ registry.npmjs.org
 # 2026-09-30 — author's own essay on the same paper + an Asterisk explainer (OSF PDF redirects to GCS).
 rubenlaukkonen.substack.com
 .asteriskmag.com
+
+# 2026-09-30 — Southern Cross Uni repository: author-deposited Beautiful Loop PDF (narrower than GCS).
+researchportal.scu.edu.au
+
+# 2026-09-30 — OSF/PsyArXiv file downloads redirect here (approved by Pádraig in chat; broad host, known exfil route).
+storage.googleapis.com
