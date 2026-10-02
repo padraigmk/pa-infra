@@ -47,9 +47,27 @@ services:
       - ./proxy:/etc/squid/pa:ro
     command: ["-f", "/etc/squid/pa/squid.conf", "-NYC"]
 
+  # Voice mode (pa/research/voice-conversation-mode.md). Docker publishes no
+  # ports for a container that is only on an internal network, so this relay
+  # straddles calnet and voicein and forwards host 127.0.0.1:8765 -> cal:8765.
+  # Host loopback only: the phone reaches it via `tailscale serve`, never the
+  # public internet. The voice server also requires its own token.
+  voicegw:
+    image: alpine/socat:latest
+    container_name: calvoicegw
+    restart: unless-stopped
+    networks:
+      - calnet
+      - voicein
+    ports:
+      - "127.0.0.1:8765:8765"
+    command: ["TCP-LISTEN:8765,fork,reuseaddr", "TCP:cal:8765"]
+
 networks:
   # internal: true = no gateway to the outside world. Egress denied by
   # topology, not by a firewall rule that could be mis-ordered.
   calnet:
     internal: true
   egress: {}
+  # Exists only so voicegw can publish a port; nothing initiates out of it.
+  voicein: {}
