@@ -228,3 +228,6 @@ researchportal.scu.edu.au
 
 # 2026-09-30 — OSF/PsyArXiv file downloads redirect here (approved by Pádraig in chat; broad host, known exfil route).
 storage.googleapis.com
+
+# 2026-10-03 — Open Food Facts product/macros API for the kitchen inventory.
+.openfoodfacts.org
