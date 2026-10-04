@@ -231,3 +231,6 @@ storage.googleapis.com
 
 # 2026-10-03 — Open Food Facts product/macros API for the kitchen inventory.
 .openfoodfacts.org
+
+# 2026-10-04 — Anthropic interpretability papers (Gurnee 2026 LLM workspace) for a voice deep dive.
+transformer-circuits.pub
