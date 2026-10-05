@@ -234,3 +234,6 @@ storage.googleapis.com
 
 # 2026-10-04 — Anthropic interpretability papers (Gurnee 2026 LLM workspace) for a voice deep dive.
 transformer-circuits.pub
+
+# 2026-10-05 — Stooq daily price CSVs (VUAG/VWRP) for a T212 shadow-portfolio comparison.
+.stooq.com
