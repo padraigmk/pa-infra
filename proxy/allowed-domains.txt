@@ -237,3 +237,6 @@ transformer-circuits.pub
 
 # 2026-10-05 — Stooq daily price CSVs (VUAG/VWRP) for a T212 shadow-portfolio comparison.
 .stooq.com
+
+# 2026-10-05 — Yahoo Finance chart API for ETF/stock daily prices (Stooq is behind a JS bot check).
+.finance.yahoo.com
