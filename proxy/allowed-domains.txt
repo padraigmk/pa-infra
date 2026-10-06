@@ -240,3 +240,6 @@ transformer-circuits.pub
 
 # 2026-10-05 — Yahoo Finance chart API for ETF/stock daily prices (Stooq is behind a JS bot check).
 .finance.yahoo.com
+
+# 2026-10-05 — Nous Research Hermes agent docs, which Pádraig shared to mine for ideas.
+.nousresearch.com
