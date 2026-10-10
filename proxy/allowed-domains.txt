@@ -249,3 +249,6 @@ transformer-circuits.pub
 
 # 2026-10-10 — Sainsbury's groceries API, so Cal can fill his basket (he checks out himself).
 .sainsburys.co.uk
+
+# 2026-10-10 — Tesco groceries, to test basket filling after Sainsbury's blocked this IP.
+.tesco.com
