@@ -243,3 +243,6 @@ transformer-circuits.pub
 
 # 2026-10-05 — Nous Research Hermes agent docs, which Pádraig shared to mine for ideas.
 .nousresearch.com
+
+# 2026-10-10 — Noema magazine essays Pádraig shares to read and log.
+.noemamag.com
