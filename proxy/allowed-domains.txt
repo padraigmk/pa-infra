@@ -246,3 +246,6 @@ transformer-circuits.pub
 
 # 2026-10-10 — Noema magazine essays Pádraig shares to read and log.
 .noemamag.com
+
+# 2026-10-10 — Sainsbury's groceries API, so Cal can fill his basket (he checks out himself).
+.sainsburys.co.uk
