@@ -252,3 +252,6 @@ transformer-circuits.pub
 
 # 2026-10-10 — Tesco groceries, to test basket filling after Sainsbury's blocked this IP.
 .tesco.com
+
+# 2026-10-10 — Ocado groceries, testing whether this IP can reach it for basket filling.
+.ocado.com
