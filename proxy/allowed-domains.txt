@@ -258,3 +258,6 @@ transformer-circuits.pub
 
 # 2026-10-21 — FxTwitter public API, to read X posts he sends (x.com needs login).
 .fxtwitter.com
+
+# 2026-10-22 — Alex Wang's associative-memory post that Pádraig sent to read.
+alexwang.ai
