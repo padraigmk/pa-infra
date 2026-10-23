@@ -261,3 +261,6 @@ transformer-circuits.pub
 
 # 2026-10-22 — Alex Wang's associative-memory post that Pádraig sent to read.
 alexwang.ai
+
+# 2026-10-23 — bioRxiv preprint Pádraig sent to read.
+.biorxiv.org
