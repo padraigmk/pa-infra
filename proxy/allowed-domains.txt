@@ -264,3 +264,6 @@ alexwang.ai
 
 # 2026-10-23 — bioRxiv preprint Pádraig sent to read.
 .biorxiv.org
+
+# 2026-10-31 — X media (images/video) for posts he sends; fxtwitter returns these URLs.
+.twimg.com
