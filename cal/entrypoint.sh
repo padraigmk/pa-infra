@@ -45,6 +45,15 @@ STARTEOF
 chmod +x /tmp/cal-start.sh
 runuser -u cal -- tmux new-session -d -s cal /tmp/cal-start.sh
 
+# Voice/web server (pa/voice/server.py, :8765 — the phone reaches it via the
+# voicegw relay + `tailscale serve`). It used to be started by hand, so every
+# restart — now including unattended-upgrade reboots — left voice down. Safe
+# to start before claude: it checks the calweb channel per turn and falls back
+# to tmux. Never block boot on it.
+if [ -f /home/cal/pa/voice/server.py ]; then
+  runuser -u cal -- bash -c 'cd /home/cal/pa && nohup uv run voice/server.py --host 0.0.0.0 >> /tmp/voice-server.log 2>&1 &' || true
+fi
+
 # --dangerously-load-development-channels asks for confirmation at every
 # launch. Accept it only when the dev channels it lists are exactly
 # server:calweb (our own); anything else stays on screen for a human. "1"

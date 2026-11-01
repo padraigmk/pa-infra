@@ -90,7 +90,10 @@ subprocess. The entrypoint (PID 1, root):
 3. Starts claude as user `cal` in a tmux session named `cal`, with
    `$CLAUDE_ARGS` from compose: auto permission mode, `--continue`, the
    Telegram channel plugin.
-4. Keepalive loop while the tmux session lives; `restart: unless-stopped`
+4. Starts the voice/web server (`pa/voice/server.py`, `:8765`) as `cal`
+   (added 2026-11-01 — it was hand-started before, so every restart left
+   voice down).
+5. Keepalive loop while the tmux session lives; `restart: unless-stopped`
    revives the container if it dies.
 
 ### `calproxy` (`proxy/squid.conf`, `proxy/allowed-domains.txt`)
