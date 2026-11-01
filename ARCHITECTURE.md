@@ -422,7 +422,8 @@ scare:
   every accepted login is `root` by publickey with the `padraig@macbook` key
   (`SHA256:qykbp6…`). No password logins, no `padraig` logins, no su/sudo.
   Source IPs: Sky (home), Slovak Telekom (Sept trip), O2 and Zen (UK), and one
-  evening via Cdnext Brussels (a VPN/CDN range, 2026-09-29).
+  evening via Cdnext Brussels (a VPN/CDN range, 2026-09-29). Pádraig
+  confirmed the Brussels and Zen sessions were his (2026-11-01).
 - **Accounts/keys**: only root is uid 0; no empty passwords;
   `authorized_keys` unchanged since 2026-08-08 and holds only the two known
   keys; no other `authorized_keys` on disk; no `/etc/ld.so.preload`.
