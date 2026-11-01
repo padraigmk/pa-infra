@@ -47,7 +47,7 @@ flowchart LR
         work["/home/padraig/git/pa-infra\nworking copy (Cal-editable, ask-gated)"]
         deploy["/root/pa-infra\ndeploy clone (root-only)"]
         watcher["allowlist-watcher.path\n+ allowlist-apply.sh (root)"]
-        mirrors["/root/pa-mirror.git\n/root/vault-mirror.git\nnightly ff-only fetch"]
+        mirrors["/root/pa-mirror.git\n/root/vault-mirror.git\nnightly ff-only fetch\nfrom host pa + vault clones"]
     end
     internet["allowlisted domains only\n(80/443)"]
     cal -- "HTTPS_PROXY" --> proxy
@@ -56,7 +56,6 @@ flowchart LR
     work -. "path unit fires" .-> watcher
     watcher -- "validated append → cp + squid reconfigure" --> deploy
     deploy -- "./proxy mounted :ro" --> proxy
-    mirrors -. "fetch via GitHub" .-> internet
 ```
 
 Mounts into the cal container (uid 1000 inside = `padraig` outside, so no
@@ -204,8 +203,13 @@ Removing or editing entries is deliberately manual: change the file, review,
 - **Root mirrors**: `/root/vault-mirror.git` (00:30) and `/root/pa-mirror.git`
   (00:35) do nightly `fetch origin master:master` — fast-forward only, never
   forced. A legitimate `git revert` propagates (it's a new commit); a hostile
-  history rewrite is refused and the mirror keeps true history. Log:
-  `/var/log/pa-mirror.log`.
+  history rewrite is refused and the mirror keeps true history. They fetch
+  from the **host clones** (`/home/padraig/git/pa`, `…/Obsidian-Vault-PMK`),
+  not GitHub — the clones Cal pushes from. Run via
+  `host/mirror-fetch.sh`, which **alerts on Telegram** when a fetch is
+  refused. Logs: `/var/log/pa-mirror.log`, `/var/log/vault-mirror.log`.
+  **A refusal after your own rebase is expected** — re-point the mirror
+  (see "Re-point a mirror" in the runbook).
 - **Deploy clone**: read-only GitHub deploy key (`~/.ssh/pa-infra-deploy`,
   ssh alias `pa-infra-github`).
 - **Push path**: the host has no GitHub credentials for these repos — pushes
@@ -437,13 +441,23 @@ scare:
   download redirect (traced in Cal's transcript, 2026-10-22). Nothing that
   looks like exfiltration.
 
-**Found: the `pa` mirror has been frozen since 2026-08-10.** A
+**Found and fixed: the `pa` mirror had been frozen since 2026-08-10.** A
 `pull --rebase` at cutover rewrote 25 local commits (all still present in
-origin as equivalent patches — `git cherry` shows every one), so every
-nightly ff-only fetch since has been `rejected (non-fast-forward)` into a log
-nobody reads. History protection for `pa` has been absent for 83 days.
-Fix: tag the old tip, then reset the mirror to origin. The rejection should
-also alert, like the allowlist validator does.
+origin as equivalent patches — `git cherry` showed every one), so every
+nightly ff-only fetch since had been `rejected (non-fast-forward)` into a log
+nobody read. History protection for `pa` was absent for 83 days. Fixed
+2026-11-01: old tip preserved as tag `pre-rebase-2026-08-10`, `master`
+re-pointed to origin, nightly fetch verified. New `host/mirror-fetch.sh`
+makes any future refusal a Telegram alert (root crontab switched to it after
+the deploy that ships it).
+
+The other egress denials checked out too: `example.com` (2026-08-10) was
+Cal's own post-cutover "non-allowlisted host should fail" self-test, and
+`gist.github.com` (2026-08-14) was Cal fetching a gist before learning the
+raw host (`*.githubusercontent.com`) is the allowlisted route — see its
+memory `github-gists-fetchable-via-raw-host`. `httpbin.org` (2026-08-10
+17:23, two minutes after squid first started) left no transcript; the
+timing matches the cutover smoke test.
 
 ### Getting back in
 
@@ -510,6 +524,17 @@ offline key (hardware key, or one stored in the password manager).
   `~/crontab.backup-20260810`.
 - **Restore after hostile force-push**: the root mirrors hold true history —
   push it back from there.
+- **Re-point a mirror after a legitimate rebase** (you get a "HISTORY REWRITE
+  REFUSED" alert and it was you):
+  ```sh
+  cd /root/pa-mirror.git                          # or vault-mirror.git
+  git cherry origin/master master                 # all '-' → nothing lost
+  git -c user.name=root -c user.email=root@localhost \
+    tag -a pre-rebase-$(date +%F) master -m "tip before re-point"
+  git update-ref refs/heads/master origin/master
+  ```
+  If `git cherry` shows any `+` lines, those commits exist only in the
+  mirror — find out why before re-pointing.
 
 ## Sharp edges (learned the hard way, 2026-08-10)
 
