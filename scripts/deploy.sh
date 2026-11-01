@@ -12,7 +12,10 @@ cd /root/pa-infra
 git checkout -- proxy/allowed-domains.txt
 git pull --ff-only
 
-docker compose build
+# --pull refreshes the ubuntu base; `pull` refreshes squid and socat. Without
+# these, images only ever update by accident (squid sat 11 months stale).
+docker compose build --pull
+docker compose pull --ignore-buildable
 docker compose up -d
 
 # Install/refresh the allowlist watcher from the ROOT-OWNED clone, so Cal's

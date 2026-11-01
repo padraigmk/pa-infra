@@ -9,6 +9,18 @@ services:
     init: true
     depends_on:
       - proxy
+    # Hardening (2026-11-01). The entrypoint runs as root only to install
+    # Cal's crontab, start cron and runuser into tmux — so it keeps the
+    # SETUID/SETGID/CHOWN family and loses the default caps it never uses.
+    # no-new-privileges means setuid binaries don't elevate: Cal (uid 1000)
+    # has no route back to root inside the container. Side effect: `crontab`
+    # as cal fails (it's setgid) — the entrypoint installs the schedule.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [NET_RAW, MKNOD, SYS_CHROOT, SETFCAP, NET_BIND_SERVICE, FSETID]
+    # 4 GB host: leave room for sshd, tailscaled, syncthing. Idle ~350 MB.
+    mem_limit: 2560m
+    pids_limit: 512
     networks:
       - calnet
     environment:
@@ -36,6 +48,14 @@ services:
     image: ubuntu/squid:latest
     container_name: calproxy
     restart: unless-stopped
+    # Squid starts as root and drops to `proxy`; that's all the caps it needs.
+    # pinger (setuid, needs NET_RAW) is disabled in squid.conf.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    cap_add: [SETUID, SETGID, CHOWN, DAC_OVERRIDE, FOWNER, KILL]
+    mem_limit: 256m
+    pids_limit: 128
     networks:
       - calnet
       - egress
@@ -56,6 +76,14 @@ services:
     image: alpine/socat:latest
     container_name: calvoicegw
     restart: unless-stopped
+    # A byte relay needs no privileges at all.
+    user: "65534:65534"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    mem_limit: 64m
+    pids_limit: 64
     networks:
       - calnet
       - voicein

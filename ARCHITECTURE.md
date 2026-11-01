@@ -348,6 +348,148 @@ from a non-allowlisted sender, so its enforcement is assumed, not observed.
 from an address that isn't the allowlisted Gmail and confirm it never appears
 in `check-email.sh --peek`.
 
+## Host hardening (2026-11-01)
+
+Prompted by the October 2026 cluster of Linux/PHP/Tailscale disclosures. The
+threat model above assumes Cal is eventually injected — i.e. an attacker gets
+code execution *inside the cal container*. That makes **local kernel
+privilege escalation the main way out of the cage**, so the host kernel being
+current matters as much as the container config.
+
+### Exposure review (as of 2026-11-01)
+
+| Issue | Exposure here |
+|---|---|
+| **CVE-2026-98432** — kernel IPv4 TCP use-after-free, unauthenticated remote root (demoed via MPTCP listeners), CVSS 9.8 | **Was the main live risk.** Ubuntu fix pending (7.0.0-43). Mitigated by disabling MPTCP and taking SSH — the only public TCP listener — off the internet. |
+| **Fragnesia** CVE-2026-46300 — XFRM ESP page-cache write → local root, CISA KEV | Fixed in 7.0.0-22; we were on 7.0.0-29. |
+| CVE-2026-46331 — tc `pedit` page-cache corruption → local root | Fixed in 7.0.0-29. |
+| **Vghost** CVE-2026-74580 — vhost kernel R/W | Ubuntu 26.04 not affected; `/dev/vhost-*` is `root:kvm 660` anyway. |
+| **PHP2Shell** CVE-2026-109618/9 — PHP RCE, CISA KEV | N/A — no PHP on the host or in any container. |
+| **Tailworm** TS-2026-014..017 — Tailscale SSH + `serve` | Low: Tailscale SSH is off, our one `serve` mount is a TCP backend (016 needs a Unix-socket backend) and single-mount (017 needs several). Upgraded 1.102.2 → 1.104.4 anyway. |
+
+Findings that weren't CVEs: **85 days' uptime on a July kernel** with fixes
+installed but never booted (`reboot-required` pending since 7.0.0-30), and
+Tailscale coming from its own apt repo, which unattended-upgrades didn't
+cover.
+
+### Changes
+
+Done 2026-11-01:
+
+- `apt full-upgrade` → kernel 7.0.0-42, systemd, containerd, libc,
+  Tailscale 1.104.4. Rebooted.
+- `/etc/sysctl.d/90-hardening.conf`: `net.mptcp.enabled = 0`.
+- `/etc/ssh/sshd_config.d/90-hardening.conf`: `MaxAuthTries 3`.
+  `AllowTcpForwarding` stays on — VS Code Remote needs it.
+- `/etc/apt/apt.conf.d/52unattended-hardening`: Tailscale repo added to
+  unattended-upgrades; automatic reboot at 05:30 UTC when an update needs it
+  (after Cal's 04:20 London job in both GMT and BST). Verified after the
+  reboot: kernel 7.0.0-42, all three containers and the Telegram poller back.
+
+- `compose.yml`: `no-new-privileges` on all three containers; `cap_drop: ALL`
+  on proxy and voicegw (squid keeps only what it needs to drop to `proxy`;
+  voicegw also runs as `nobody` with a read-only root); cal drops the default
+  caps its root entrypoint never uses; memory and pids limits everywhere.
+  Each was tested in a throwaway container first (squid: allowlisted host
+  tunnels, others 403, `-k reconfigure` survives; cal: `crontab -u cal`, cron
+  jobs firing as cal, `runuser` → tmux all work). Known side effect: Cal can't
+  run `crontab` itself (setgid) — nothing relies on that.
+- `squid.conf`: `pinger_enable off` (setuid ICMP helper, unused).
+- `deploy.sh`: `build --pull` + `pull --ignore-buildable`, so base and
+  upstream images refresh on every deploy instead of never.
+
+**Considered and declined: tailnet-only SSH.** It would take the only public
+TCP listener off the internet, but adds a lockout dependency on Tailscale
+(node key expiry, a console password to keep). With MPTCP off, keys-only
+auth, fail2ban, and unattended reboots picking up the 98432 fix when Ubuntu
+ships it, the residual risk didn't justify the moving parts. Revisit if a
+pre-auth sshd bug lands. Middle ground if wanted: a Hetzner Cloud Firewall
+allowing 22 only from home.
+
+Still open: Syncthing GUI password; whether its relays/global discovery are
+needed.
+
+### Compromise sweep (2026-11-01)
+
+Checked for evidence of intrusion; nothing found. Re-run these after any
+scare:
+
+- **Logins** (`journalctl -u ssh`, `/var/log/auth.log*`, back to 2026-08-30):
+  every accepted login is `root` by publickey with the `padraig@macbook` key
+  (`SHA256:qykbp6…`). No password logins, no `padraig` logins, no su/sudo.
+  Source IPs: Sky (home), Slovak Telekom (Sept trip), O2 and Zen (UK), and one
+  evening via Cdnext Brussels (a VPN/CDN range, 2026-09-29).
+- **Accounts/keys**: only root is uid 0; no empty passwords;
+  `authorized_keys` unchanged since 2026-08-08 and holds only the two known
+  keys; no other `authorized_keys` on disk; no `/etc/ld.so.preload`.
+- **Binaries**: `dpkg -V` clean apart from conffiles; PAM changes were the
+  2026-11-01 `libpam-systemd` upgrade. No unpackaged setuid files outside
+  container layers. Kernel `tainted = 0`.
+- **Persistence**: crontabs are the two mirror jobs + padraig's (env only);
+  no `at` jobs; the only non-package systemd units are `cal.service`
+  (disabled), the allowlist watcher (matches the repo) and
+  `cold-storage-sim`. Cal's in-container crontab matches `schedule.cron`.
+- **Runtime**: no executables in tmp dirs, no processes on deleted binaries;
+  outbound connections are only claude, tailscaled and syncthing.
+- **Tailscale/Syncthing peers**: only Pádraig's own devices.
+- **Egress (squid denials since 2026-08-10)**: `httpbin.org` / `example.com`
+  were the cutover tests; the one Oracle Cloud bucket host was an OSF paper
+  download redirect (traced in Cal's transcript, 2026-10-22). Nothing that
+  looks like exfiltration.
+
+**Found: the `pa` mirror has been frozen since 2026-08-10.** A
+`pull --rebase` at cutover rewrote 25 local commits (all still present in
+origin as equivalent patches — `git cherry` shows every one), so every
+nightly ff-only fetch since has been `rejected (non-fast-forward)` into a log
+nobody reads. History protection for `pa` has been absent for 83 days.
+Fix: tag the old tip, then reset the mirror to origin. The rejection should
+also alert, like the allowlist validator does.
+
+### Getting back in
+
+The public IP is `178.105.252.173` (IPv6 `2a01:4f8:c015:e262::1`). SSH stays
+public (see "declined" above). Access paths, in order:
+
+1. **SSH, public**: `ssh root@178.105.252.173`, keys only.
+2. **SSH over Tailscale**: `ssh root@ubuntu-4gb-fsn1-1-claude` (MagicDNS) or
+   `ssh root@100.95.45.101` — works if your laptop is on the tailnet, and
+   is the way in if you've tripped fail2ban (it bans public IPs, not the
+   tailnet).
+3. **Hetzner Cloud web console**: Console → the server → `>_` icon. A VNC
+   session on the server's own screen, no network involved. Only useful if
+   root has a password — it's currently locked, so set one first
+   (`passwd root`) if you want this path.
+4. **Hetzner rescue system** (no key works, or the box won't boot
+   properly): Console → the server → Rescue → *Enable rescue & power cycle*
+   (choose your SSH key, or note the root password it shows). Then:
+   ```sh
+   ssh root@178.105.252.173            # lands in the rescue OS, not ours
+   mount /dev/sda1 /mnt
+   # pick what you need:
+   echo 'ssh-ed25519 AAAA… new-key' >> /mnt/root/.ssh/authorized_keys
+   sed -i 's/^ENABLED=yes/ENABLED=no/' /mnt/etc/ufw/ufw.conf   # firewall off
+   umount /mnt && reboot
+   ```
+   If you disabled ufw, re-enable it once back in (`ufw enable`).
+   A rescue boot leaves the disk untouched apart from what you edit.
+   Your host key will differ in rescue mode, so expect an SSH warning.
+
+**If you lose your SSH key.** Two keys are authorised for both root and
+`padraig`: `padraig@macbook` and `padraig@asus`. Losing one is a non-event;
+use the other and remove the lost one from `authorized_keys`. Losing both
+means rescue mode (path 4) to add a new key. The root of trust is therefore
+the **Hetzner account** — keep 2FA on it. Optional belt-and-braces: a third,
+offline key (hardware key, or one stored in the password manager).
+
+**Footguns to remember**
+
+- A bad `ufw` or sshd edit over SSH: keep the current session open and test a
+  *new* connection before closing it. ufw is stateful, so an existing session
+  survives a rule deletion even when new connections are blocked. Run
+  `sshd -t` before reloading sshd.
+- Tailscale node key expiry (due 2026-11-26 unless disabled) no longer locks
+  you out, but it does take the voice gateway (`tailscale serve`) offline.
+
 ## Runbook
 
 - **Deploy a change** (anything beyond allowlist appends): review
