@@ -267,3 +267,7 @@ alexwang.ai
 
 # 2026-10-31 — X media (images/video) for posts he sends; fxtwitter returns these URLs.
 .twimg.com
+
+# 2026-11-02 — Oxford Psychedelic Society listings (Oxford Talks / events.ox.ac.uk) for the events scanner.
+.ox.ac.uk
+.oxpsysoc.org
