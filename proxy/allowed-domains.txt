@@ -271,3 +271,6 @@ alexwang.ai
 # 2026-11-02 — Oxford Psychedelic Society listings (Oxford Talks / events.ox.ac.uk) for the events scanner.
 .ox.ac.uk
 .oxpsysoc.org
+
+# 2026-11-10 — GlobalSign intermediate cert; Oxford council's Idox site serves an incomplete TLS chain.
+secure.globalsign.com
