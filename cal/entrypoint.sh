@@ -23,7 +23,9 @@ cron
 # stale-poller check can SIGTERM an innocent (often its own) fresh process.
 rm -f /home/cal/.claude/channels/telegram/bot.pid
 
-CLAUDE_ARGS="${CLAUDE_ARGS:---dangerously-skip-permissions --continue}"
+# Fail safe, not open: if compose ever stops passing CLAUDE_ARGS, fall back to
+# auto mode (deny/ask rules hold) rather than skipping permissions entirely.
+CLAUDE_ARGS="${CLAUDE_ARGS:---permission-mode auto --continue}"
 
 # Claude Code is the native build in ~/.local/bin (bind-mounted, so it
 # survives image rebuilds, and cal-owned, so it can self-update). A fresh home

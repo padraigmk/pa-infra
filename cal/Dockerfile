@@ -35,6 +35,16 @@ RUN userdel -r ubuntu 2>/dev/null || true \
 # installed and updated at boot by entrypoint.sh, so it survives rebuilds and
 # can self-update. No npm copy — it went stale and shadowed the native one.
 ENV PATH=/home/cal/.local/bin:${PATH}
+
+# qmd runs on node 22, whose built-in fetch ignores HTTP(S)_PROXY unless this
+# is set — and with no external DNS in the container an unproxied fetch hangs
+# forever holding the sqlite index open. Set image-wide so the CLI and the
+# `qmd mcp` server Claude spawns both get it (cron scrubs its environment, so
+# pa/schedule.cron sets the same two variables itself). INDEX_PATH points every
+# qmd invocation at the real index on the vault bind mount; the default
+# (~/.cache/qmd/index.sqlite) is empty and makes searches look like misses.
+ENV NODE_USE_ENV_PROXY=1
+ENV INDEX_PATH=/home/cal/vault/.qmd/index.sqlite
 RUN npm install -g @tobilu/qmd
 RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
