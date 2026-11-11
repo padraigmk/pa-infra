@@ -1,0 +1,13 @@
+[Unit]
+Description=cal-hub: host status page and allowlist approvals
+After=network-online.target docker.service
+
+[Service]
+# Run from the deploy clone, never Cal's working copy: Cal must not be able to
+# edit the thing that approves its own requests.
+ExecStart=/usr/bin/python3 /root/pa-infra/host/hub/hub.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

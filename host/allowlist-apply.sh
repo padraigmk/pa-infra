@@ -4,7 +4,8 @@
 # redundancy conflicts, AND parse cleanly under the real squid binary.
 # Anything else is rejected, left un-deployed, and reported to Pádraig.
 #
-# Triggered by allowlist-watcher.path when Cal edits its working copy.
+# Triggered by allowlist-watcher.path when Cal edits its working copy, and by
+# cal-hub with --approved/--deny when Pádraig answers a pending request.
 # Executes only from /root/pa-infra (deploy clone); Cal has no write path here.
 #
 # Hardened 2026-08-20, after an append containing both `huggingface.co` and
@@ -26,17 +27,33 @@
 # deployed. A stuck append costs Cal one domain; a bad deploy costs everything.
 set -uo pipefail
 
-WORK=/home/padraig/git/pa-infra/proxy/allowed-domains.txt
-DEPLOYED=/root/pa-infra/proxy/allowed-domains.txt
+# Since 2026-11-11 a valid append is no longer applied on sight. It is held
+# as a pending request until Pádraig approves it on the cal-hub page
+# (host/hub/hub.py), which calls this script back with --approved <hash> or
+# --deny <hash>. The reason: the ask-gate in Cal's settings only covers its
+# Edit/Write tools, while this file is writable from Cal's shell, so before
+# this change anything that got Cal to append a line could open any domain.
+# The hash is of the whole proposed file, so what gets applied is exactly
+# what the page showed.
+#
+# The ALLOWLIST_* variables exist for testing against copies; nothing sets
+# them in production.
+WORK=${ALLOWLIST_WORK:-/home/padraig/git/pa-infra/proxy/allowed-domains.txt}
+DEPLOYED=${ALLOWLIST_DEPLOYED:-/root/pa-infra/proxy/allowed-domains.txt}
 SQUIDCONF=/root/pa-infra/proxy/squid.conf
-BACKUP=/root/pa-infra/proxy/.allowed-domains.last-good
+BACKUP=${ALLOWLIST_BACKUP:-/root/pa-infra/proxy/.allowed-domains.last-good}
 # Status file lives in Cal's bind-mounted working copy: Cal can read neither
 # $LOG nor anything under /root, so this is its only channel for finding out
-# that its own append was rejected.
-STATUS=/home/padraig/git/pa-infra/proxy/.allowlist-status
-LOG=/var/log/cal-allowlist.log
+# what happened to its own append.
+STATUS=${ALLOWLIST_STATUS:-/home/padraig/git/pa-infra/proxy/.allowlist-status}
+LOG=${ALLOWLIST_LOG:-/var/log/cal-allowlist.log}
+PENDING=${ALLOWLIST_PENDING:-/var/lib/cal-hub/allowlist-pending.json}
+DRY_RUN=${ALLOWLIST_DRY_RUN:-}   # tests: validate and copy, but leave the live proxy alone
+MODE=${1:-}
+ARG=${2:-}
+HUB_URL=$(grep -m1 '^HUB_URL=' /etc/cal-hub.conf 2>/dev/null | cut -d= -f2- | tr -d '\042\047')
 PROXY_IMAGE=ubuntu/squid:latest
-TG_ENV=/home/padraig/cal-home/.claude/channels/telegram/.env
+TG_ENV=${ALLOWLIST_TG_ENV:-/home/padraig/cal-home/.claude/channels/telegram/.env}
 TG_CHAT=8502631426
 
 log() { echo "$(date -Is) $*" >> "$LOG"; }
@@ -45,6 +62,7 @@ log() { echo "$(date -Is) $*" >> "$LOG"; }
 # A silent rejection is exactly what let the last failure run unnoticed.
 notify() {
   local verdict="$1" detail="$2" token
+  echo "$verdict"   # the hub shows the last line of output
 
   { echo "$(date -Is)"; echo "$verdict"; echo "$detail"; } > "$STATUS.tmp" 2>/dev/null \
     && mv "$STATUS.tmp" "$STATUS" 2>/dev/null
@@ -64,6 +82,7 @@ ${detail}" || true
 
 reject() {
   log "REJECT: $1"
+  rm -f "$PENDING"
   notify "CHANGE REJECTED, NOT DEPLOYED" "$1
 
 Cal's working copy still has the proposed change; the live proxy is untouched and still running the last good allowlist. Fix the line and save again, or deploy by hand as root."
@@ -77,7 +96,26 @@ deployed_size=$(stat -c %s "$DEPLOYED")
 work_size=$(stat -c %s "$WORK")
 
 if [ "$work_size" -eq "$deployed_size" ] && cmp -s "$DEPLOYED" "$WORK"; then
+  rm -f "$PENDING"   # whatever was asked for has been withdrawn
+  [ -n "$MODE" ] && echo "Nothing is waiting any more."
   exit 0  # no change
+fi
+
+# --- Denied on the hub page -------------------------------------------------
+# Put Cal's copy back to what is deployed. Writing through the existing file
+# keeps its owner and mode, so Cal can still append to it afterwards.
+if [ "$MODE" = "--deny" ]; then
+  if [ ! -f "$PENDING" ] || ! grep -q "\"hash\": \"$ARG\"" "$PENDING"; then
+    echo "That request is not the one waiting now. Refresh and look again."
+    exit 1
+  fi
+  denied=$(tail -c +"$((deployed_size + 1))" "$WORK" | grep -v '^[[:space:]]*$\|^[[:space:]]*#' | tr '\n' ' ')
+  cat "$DEPLOYED" > "$WORK"
+  rm -f "$PENDING"
+  log "DENIED: $denied"
+  notify "DENIED" "Pádraig declined: $denied
+The line(s) have been removed from the working copy. Do not add them again unless he asks."
+  exit 0
 fi
 
 # --- Gate 1: append-only ----------------------------------------------------
@@ -165,6 +203,33 @@ if [ "$parse_rc" -ne 0 ]; then
 $(echo "$parse_out" | grep -i 'FATAL\|ERROR' | head -5)"
 fi
 
+# --- Gate 5: Pádraig's approval ---------------------------------------------
+# Everything above says the change is safe to load. Whether these domains
+# should be reachable at all is his call, made on the hub page.
+work_hash=$(sha256sum "$WORK" | cut -d' ' -f1)
+if [ "$MODE" != "--approved" ] || [ "$ARG" != "$work_hash" ]; then
+  wanted=$(echo "$added" | grep -v '^[[:space:]]*$\|^[[:space:]]*#')
+  already=""
+  [ -f "$PENDING" ] && grep -q "\"hash\": \"$work_hash\"" "$PENDING" && already=yes
+  mkdir -p "$(dirname "$PENDING")"
+  WANTED="$wanted" HASH="$work_hash" python3 - > "$PENDING.tmp" <<'PY' && mv "$PENDING.tmp" "$PENDING"
+import json, os, time
+print(json.dumps({"hash": os.environ["HASH"], "lines": os.environ["WANTED"].split(),
+                  "at": time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime())}, indent=1))
+PY
+  if [ "$MODE" = "--approved" ]; then
+    echo "The request changed after that page was loaded. Refresh and look again."
+    exit 1
+  fi
+  if [ -z "$already" ]; then   # the watcher can fire twice for one save: ask once
+    log "PENDING: $(echo "$wanted" | tr '\n' ' ')"
+    notify "APPROVAL NEEDED" "Cal asks to open: $(echo "$wanted" | tr '\n' ' ')
+Nothing is live yet. Approve or deny: ${HUB_URL:-the cal-hub page}"
+  fi
+  exit 0
+fi
+rm -f "$PENDING"
+
 # --- Deploy, with rollback --------------------------------------------------
 cp "$DEPLOYED" "$BACKUP"
 cp "$WORK" "$DEPLOYED"
@@ -182,6 +247,12 @@ rollback() {
 The last-good allowlist has been restored and calproxy told to reload. Verify with: docker ps --filter name=calproxy"
   exit 0
 }
+
+if [ -n "$DRY_RUN" ]; then
+  log "APPLIED (dry run, proxy untouched): ${added_list}"
+  echo "APPLIED (dry run)"
+  exit 0
+fi
 
 if ! docker exec calproxy squid -k reconfigure >/dev/null 2>&1; then
   rollback "squid accepted the config on parse but failed to reconfigure with it ($added_list)."

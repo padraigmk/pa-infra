@@ -577,3 +577,35 @@ offline key (hardware key, or one stored in the password manager).
    dirties `proxy/allowed-domains.txt` in `/root/pa-infra`; `deploy.sh`
    handles this by checking out the file before pulling and re-running the
    validator after, so uncommitted-but-approved appends survive a deploy.
+
+## cal-hub: status page and approvals (added 2026-11-11)
+
+`host/hub/hub.py` is a small root-owned service on the host, outside the
+container. It binds to loopback (port 8770) and is published to the tailnet
+only, with `tailscale serve --bg --https=8444 http://127.0.0.1:8770`. It
+accepts requests only from the tailnet login named as `OWNER` in
+`/etc/cal-hub.conf`.
+
+It does two things:
+
+- **Status.** Containers, whether Cal's session is up (with the bottom of its
+  screen), the cron doctor's table, disk, memory, pending reboot, Claude usage.
+  It keeps answering when Cal is down, which is the point of running it here.
+- **Allowlist approvals.** A valid append to `proxy/allowed-domains.txt` is no
+  longer applied on sight. `allowlist-apply.sh` records it as pending
+  (`/var/lib/cal-hub/allowlist-pending.json`), tells Pádraig, and waits. The
+  hub page shows the domains with Approve and Deny, and calls the script back
+  with `--approved <hash>` or `--deny <hash>`; the hash is of the whole
+  proposed file, so what is applied is exactly what was shown. Deny puts
+  Cal's working copy back to the deployed file.
+
+Why approvals moved here: the ask-gate in Cal's settings covers only its
+Edit/Write tools, and the file is writable from Cal's shell. Before this,
+anything that got Cal to append a line could open any domain with nobody
+asked. Cal still cannot touch the hub or the script: both run from the
+root-owned deploy clone.
+
+One-time setup on the host (not in git, since it names the tailnet login):
+
+    printf 'OWNER=<tailnet login>\nHUB_URL=https://<machine>.<tailnet>.ts.net:8444\n' > /etc/cal-hub.conf
+    tailscale serve --bg --https=8444 http://127.0.0.1:8770
