@@ -46,6 +46,14 @@ ENV PATH=/home/cal/.local/bin:${PATH}
 ENV NODE_USE_ENV_PROXY=1
 ENV INDEX_PATH=/home/cal/vault/.qmd/index.sqlite
 RUN npm install -g @tobilu/qmd
+
+# Agent UI (/home/cal/agent-ui) runs TypeScript directly, which Ubuntu's Node
+# 22 is built without. A pinned official Node 24 sits beside it, off PATH, so
+# nothing else changes runtime; .mcp.json names /opt/node24/bin/node.
+RUN curl -fsSLo /tmp/node24.tar.xz https://nodejs.org/dist/v24.22.2/node-v24.22.2-linux-x64.tar.xz \
+    && echo "48cc0e21e048790e54c0cf5749c2725005313d652651c40b7a21feb9697aaf75  /tmp/node24.tar.xz" | sha256sum -c - \
+    && mkdir -p /opt/node24 && tar -xJf /tmp/node24.tar.xz -C /opt/node24 --strip-components=1 \
+    && rm /tmp/node24.tar.xz
 RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
 

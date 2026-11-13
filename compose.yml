@@ -37,7 +37,7 @@ services:
       # traffic and reports "Channels are not currently available" without it.
       # Auto mode (since cutover 2026-08-10): deny rules hold, ask rules relay
       # to Telegram as approval prompts, classifier gates the rest.
-      CLAUDE_ARGS: "--permission-mode auto --continue --channels plugin:telegram@claude-plugins-official --dangerously-load-development-channels server:calweb"
+      CLAUDE_ARGS: "--permission-mode auto --continue --channels plugin:telegram@claude-plugins-official --dangerously-load-development-channels server:calweb server:agent-ui"
     volumes:
       - /home/padraig/cal-home:/home/cal
       - /home/padraig/git/pa:/home/cal/pa
@@ -90,6 +90,28 @@ services:
     ports:
       - "127.0.0.1:8765:8765"
     command: ["TCP-LISTEN:8765,fork,reuseaddr", "TCP:cal:8765"]
+
+  # Agent UI (the page Cal is talked to through). Same shape as voicegw:
+  # host 127.0.0.1:7878 -> cal:7878, reached from the phone via two
+  # `tailscale serve` ports (page and view sandbox). Agent UI itself requires
+  # sign-in for anything that does not come from inside Cal's container.
+  uigw:
+    image: alpine/socat:latest
+    container_name: caluigw
+    restart: unless-stopped
+    user: "65534:65534"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    mem_limit: 64m
+    pids_limit: 64
+    networks:
+      - calnet
+      - voicein
+    ports:
+      - "127.0.0.1:7878:7878"
+    command: ["TCP-LISTEN:7878,fork,reuseaddr", "TCP:cal:7878"]
 
 networks:
   # internal: true = no gateway to the outside world. Egress denied by

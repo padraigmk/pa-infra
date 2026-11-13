@@ -58,7 +58,8 @@ fi
 
 # --dangerously-load-development-channels asks for confirmation at every
 # launch. Accept it only when the dev channels it lists are exactly
-# server:calweb (our own); anything else stays on screen for a human. "1"
+# our own (server:calweb, with or without server:agent-ui); anything else
+# stays on screen for a human. "1"
 # picks option 1; Enter is a fallback in case the number only moved focus.
 # Gives up after 3 min (the update check above can take 60s first).
 (
@@ -68,7 +69,7 @@ fi
     p=$(pane) || continue
     grep -q "Loading development channels" <<<"$p" || continue
     chans=$(grep -o 'server:[A-Za-z0-9_.-]*' <<<"$p" | sort -u | tr '\n' ' ')
-    if [ "$chans" != "server:calweb " ]; then
+    if [ "$chans" != "server:calweb " ] && [ "$chans" != "server:agent-ui server:calweb " ]; then
       echo "dev-channels dialog lists '$chans' — not auto-accepting"
       break
     fi
@@ -76,7 +77,7 @@ fi
     sleep 2
     grep -q "Loading development channels" <<<"$(pane)" \
       && runuser -u cal -- tmux send-keys -t cal:0 Enter
-    echo "dev-channels dialog auto-accepted (server:calweb)"
+    echo "dev-channels dialog auto-accepted ($chans)"
     break
   done
 ) &
